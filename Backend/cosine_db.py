@@ -1,14 +1,15 @@
 # ──────────────────────────────────────────────────────────────
-# cosine_db.py
+# cosine_db.py   ★ CHANGED ★
 # ──────────────────────────────────────────────────────────────
 """
 1. PostgreSQL RDS 에서 (prob_ad < 0.5) & shop_type 필터로 리뷰 로드
 2. 각 리뷰에 대해 Gemini 로 4-feature 추출
 3. Google 'text-multilingual-embedding-002' 모델로 feature 임베딩
 4. 사용자 feature 와의 cosine 유사도 평균 → 상위 k개 업소 추천
+5. 결과 포맷: [{"가게": …, "이유": …, "리뷰": …}, …]
 """
 from __future__ import annotations
-import os, json, logging
+import os, logging, json
 from collections import defaultdict
 from typing import Dict, List, Tuple, Any, Sequence
 
@@ -44,8 +45,7 @@ def _fetch_reviews(shop_type: str) -> List[Dict]:
     SELECT id,
            review,
            restaurant  AS shop_name,
-           prob_ad,
-           shop_type
+           prob_ad
       FROM reviews
      WHERE shop_type = %s
        AND prob_ad  < 0.5;
@@ -74,10 +74,10 @@ def recommend_shops(
     shop_type: str,
     user_features: Dict[str, str],
     top_k: int = 3,
-) -> Dict[str, Any]:
+) -> List[Dict[str, Any]]:     # ★ 반환 타입 변경 ★
     reviews = _fetch_reviews(shop_type)
     if not reviews:
-        return {"recommendations": [], "detail": "해당 업종 리뷰가 없습니다."}
+        return []
 
     # 사용자 feature 임베딩
     user_vecs = {k: _embed_text(v) for k, v in user_features.items()}
@@ -111,20 +111,19 @@ def recommend_shops(
     agg = {shop: float(np.mean(scs)) for shop, scs in shop_scores.items()}
     top = sorted(agg.items(), key=lambda x: x[1], reverse=True)[:top_k]
 
-    # Gemini 로 간단한 추천 이유 생성
-    recs = []
+    # Gemini 로 간단한 추천 이유 생성 & 결과 구조화  ★ NEW ★
+    results: List[Dict[str, Any]] = []
     for shop, sc in top:
         reason = _make_reason(shop, user_features, shop_reviews[shop][:5])
-        recs.append({
-            "shop_name": shop,
-            "score": round(sc, 4),
-            "reason": reason,
-            "reviews": [
-                {"original": r, "extracted_features": f} for r, f in shop_reviews[shop]
-            ]
+        # 대표 리뷰는 첫 번째 리뷰 사용
+        rep_review = shop_reviews[shop][0][0] if shop_reviews[shop] else ""
+        results.append({
+            "가게": shop,
+            "이유": reason,
+            "리뷰": rep_review,
         })
 
-    return {"recommendations": recs}
+    return results
 
 # ──────────────── 4) Helper ────────────────
 def _extract_features(text: str) -> Dict[str, str]:
@@ -144,7 +143,7 @@ def parse_feature_output(s: str) -> Dict[str, str]:
     return out
 
 def _embed_text(text: str) -> np.ndarray:
-    """Google 'text-multilingual-embedding-002' 사용 (768-D)  :contentReference[oaicite:0]{index=0}"""
+    """Google 'text-multilingual-embedding-002' 사용 (768-D)"""
     res = genai.embed_content(
         model="models/text-multilingual-embedding-002",
         content=text,
