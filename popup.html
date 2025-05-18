@@ -1,0 +1,85 @@
+<!-- popup.html -->
+
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+
+<!-- 구글 웹폰트(선택) -->
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@700&family=Poppins&display=swap" rel="stylesheet" />
+
+<!-- 외부 CSS -->
+<link rel="stylesheet" href="style.css" />
+<title>SPOTTER Demo</title>
+</head>
+
+<body>
+  <div class="card">
+    <!-- 로고 SVG -->
+    <img src="logo.svg" alt="SPOTTER logo" class="brand" width="120" height="auto" />
+
+    <!-- Top Tabs -->
+    <div class="tab-row">
+      <button class="tab-btn primary">
+        <span>📝<b> 리뷰 검사하기</b></span>
+      </button>
+      <a href="eval_home.html" style="text-decoration: none; flex:1; display:flex;">
+      <button class="tab-btn">
+        <span>📊<b> 리뷰 평가하기</b></span>
+      </button>
+      </a>
+    </div>
+
+    <!-- Recognized Review -->
+    <section>
+      <div class="review-box">
+        <div class="sub-tabs">
+            <h3 class="section-title">인식된 리뷰</h3>
+        </div>
+
+        <p class="review-text">
+            <div id="text" class="placeholder"></div>
+            <script src="popup.js"></script>
+        </p>
+
+        <div class="action-row">
+          <!-- <button class="btn cancel">취소</button> -->
+          <button id="send" class="btn confirm">검사하기</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- 검사 결과 -->
+    <section>
+      <h3 class="section-title2">  검사 결과</h3>
+      <div class="progress-box">
+        <p class="progress-label"><b id="message"></b></p>
+        <div class="progress-label">
+          <span id="number"></span>
+          <script src="app.js"></script>
+        </div>
+          <div class="progress">
+            <div class="progress-bar" id="progressBar"></div>
+          </div>
+          <script src="progress.js"></script>
+    </div>
+
+    <div class="ai-summary">
+      <strong>AI 요약</strong>
+      <div id="result"></div>
+      <br/>
+      <!-- <span class="highlight">스스로 작성한 리뷰</span>로 판단했어요. -->
+    </div>
+    </section>
+
+        <!-- Upload Button -->
+        <div class="gradation"></div>
+        <div class="button-wrapper">
+            <a href="recommendation.html" style="text-decoration: none; flex:1; display:flex;">
+            <button class="upload-btn">가게 추천받기</button>
+            </a>
+        </div>
+  </div>
+</body>
+</html>

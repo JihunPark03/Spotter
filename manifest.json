@@ -1,0 +1,34 @@
+{
+    "name": "SPOTTER",
+    "description": "Distinguishing Ad Reviews.",
+    "version": "1.0.0",
+    "manifest_version": 3,
+  
+    "permissions": ["storage", "activeTab", "scripting", "clipboardRead"],
+    "host_permissions": ["<all_urls>"],
+  
+    "background": {
+      "service_worker": "background.js"
+    },
+  
+    "content_scripts": [
+      {
+        "matches": ["<all_urls>"],
+        "js": ["contentScript.js"],
+        "run_at": "document_start",
+        "all_frames": true,
+        "match_about_blank": true,
+        "world": "MAIN"
+      }
+    ],
+  
+    "action": {
+      "default_title": "Show Selection",
+      "default_popup": "popup.html"
+    },
+
+    "icons": {
+      "16": "spotter.png"
+    }
+  }
+  
