@@ -219,3 +219,25 @@
     resize: none; /* 수동 리사이즈 막기 (옵션) */
     overflow: hidden;
   }
+.auto-expand2 {
+    width: 100%;
+    min-height: 50px;
+    padding: 12px;
+    font-size: 10px;
+    border: 2px solid #ccc;
+    border-radius: 8px;
+    resize: none; /* 수동 리사이즈 막기 (옵션) */
+    overflow: hidden;
+}
+
+.button-container {
+  display: flex;
+  gap: 10px; / 버튼 사이 간격 조절 /
+  justify-content: center; / 버튼을 가운데 정렬 */
+}
+
+.btn-new {
+  padding: 10px 20px;
+  font-size: 16px;
+  cursor: pointer;
+}
