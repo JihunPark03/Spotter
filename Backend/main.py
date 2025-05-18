@@ -1,11 +1,12 @@
 # ──────────────────────────────────────────────────────────────
-# main.py
+# main.py   ★ CHANGED ★
 # ──────────────────────────────────────────────────────────────
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
-import logging, os
+from pathlib import Path
+import logging, os, json
 from dotenv import load_dotenv
 import google.generativeai as genai
 
@@ -23,10 +24,13 @@ else:
 # cosine_db 는 genai 초기화 이후 import (순환참조 방지)
 import cosine_db  # noqa: E402
 
+# 사용자 입력 JSON 경로  ★ NEW ★
+USER_INPUT_PATH = Path("download/user_input.json")
+
 app = FastAPI(
     title="Spotter API",
     description="Backend API for the Spotter Chrome Extension",
-    version="0.2.0",
+    version="0.3.0",
 )
 
 # CORS (개발용 - 프로덕션에서는 origin 제한)
@@ -39,17 +43,14 @@ app.add_middleware(
 )
 
 # ──────────────── 2) Pydantic 모델 ────────────────
-class TextRequest(BaseModel):
-    text: str = Field(..., example="청결하고 저렴한 제주도 맛집 찾아줘")
-
-class RecommendationRequest(TextRequest):
+class RecommendationRequest(BaseModel):
     shop_type: str = Field(
         ...,
         example="식당",
         description="숙박 | 식당 | 미용 중 하나 선택"
     )
 
-# ──────────────── 3) 공통 유틸 ────────────────
+# ──────────────── 3) 유틸 함수 ────────────────
 def _load_system_prompt() -> str:
     try:
         with open("gemini_prompt.txt", encoding="utf-8") as f:
@@ -61,17 +62,35 @@ def _load_system_prompt() -> str:
             "(must include location)."
         )
 
+def _load_user_input() -> str:        # ★ NEW ★
+    """
+    download/user_input.json 파일에서 '입력내용' 필드를 읽어온다.
+    오류 시 예외 발생 → 상위에서 500 리턴
+    """
+    try:
+        with USER_INPUT_PATH.open(encoding="utf-8") as f:
+            data = json.load(f)
+        return str(data.get("입력내용", "")).strip()
+    except FileNotFoundError:
+        raise FileNotFoundError(f"{USER_INPUT_PATH} not found")
+
 # ──────────────── 4) 엔드포인트 ────────────────
 @app.get("/")
 async def root():
     return {"status": "online", "message": "Spotter API is running"}
 
 @app.post("/gemini")
-async def extract_features(req: TextRequest):
+async def extract_features():
+    """download/user_input.json → 4-feature 추출"""
     if not api_key:
         return JSONResponse(status_code=500, content={"reply": "API key not set"})
-    if not req.text.strip():
-        return JSONResponse(status_code=400, content={"reply": "No input provided."})
+    try:
+        user_text = _load_user_input()
+        if not user_text:
+            return JSONResponse(status_code=400, content={"reply": "입력내용 비어있음"})
+    except Exception as e:
+        logger.exception("user_input.json 읽기 실패")
+        return JSONResponse(status_code=500, content={"reply": str(e)})
 
     model = genai.GenerativeModel("gemini-2.0-flash")
     prompt = _load_system_prompt()
@@ -79,7 +98,7 @@ async def extract_features(req: TextRequest):
     try:
         rsp = model.generate_content([
             {"role": "user", "parts": [prompt]},
-            {"role": "user", "parts": [req.text]},
+            {"role": "user", "parts": [user_text]},
         ])
         return {"reply": rsp.text}
     except Exception as e:
@@ -88,16 +107,18 @@ async def extract_features(req: TextRequest):
 
 @app.post("/recommendations")
 async def get_recommendations(req: RecommendationRequest):
+    """shop_type만 받아서 추천 결과 반환"""
     if not api_key:
         return JSONResponse(status_code=500, content={"detail": "API key not set"})
 
     # 1) 사용자 의도 4-feature 추출
-    model = genai.GenerativeModel("gemini-2.0-flash")
-    prompt = _load_system_prompt()
     try:
+        user_text = _load_user_input()
+        model = genai.GenerativeModel("gemini-2.0-flash")
+        prompt = _load_system_prompt()
         feat_txt = model.generate_content([
             {"role": "user", "parts": [prompt]},
-            {"role": "user", "parts": [req.text]},
+            {"role": "user", "parts": [user_text]},
         ]).text
         user_feats = cosine_db.parse_feature_output(feat_txt)
     except Exception as e:
