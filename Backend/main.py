@@ -1,12 +1,12 @@
 # ──────────────────────────────────────────────────────────────
-# main.py   ★ CHANGED ★
+# main.py   (Spotter API v0.3.0)
 # ──────────────────────────────────────────────────────────────
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
-from pathlib import Path
 import logging, os, json
+from pathlib import Path                           #  ← 파일 읽기용
 from dotenv import load_dotenv
 import google.generativeai as genai
 
@@ -23,9 +23,6 @@ else:
 
 # cosine_db 는 genai 초기화 이후 import (순환참조 방지)
 import cosine_db  # noqa: E402
-
-# 사용자 입력 JSON 경로  ★ NEW ★
-USER_INPUT_PATH = Path("download/user_input.json")
 
 app = FastAPI(
     title="Spotter API",
@@ -44,17 +41,16 @@ app.add_middleware(
 
 # ──────────────── 2) Pydantic 모델 ────────────────
 class RecommendationRequest(BaseModel):
-    shop_type: str = Field(
-        ...,
-        example="식당",
-        description="숙박 | 식당 | 미용 중 하나 선택"
-    )
+    """shop_type 만 받는다.  (user text 는 로컬 파일에서 읽어옴)"""
+    shop_type: str = Field(..., example="식당", description="숙박 | 식당 | 미용")
 
-# ──────────────── 3) 유틸 함수 ────────────────
+# ──────────────── 3) 공통 유틸 ────────────────
+PROMPT_PATH = Path("gemini_prompt.txt")
+USER_JSON   = Path("download/user_input.json")      # ← ★ 로컬 입력 경로
+
 def _load_system_prompt() -> str:
     try:
-        with open("gemini_prompt.txt", encoding="utf-8") as f:
-            return f.read()
+        return PROMPT_PATH.read_text(encoding="utf-8")
     except FileNotFoundError:
         logger.warning("gemini_prompt.txt not found - fallback prompt 사용")
         return (
@@ -62,17 +58,12 @@ def _load_system_prompt() -> str:
             "(must include location)."
         )
 
-def _load_user_input() -> str:        # ★ NEW ★
-    """
-    download/user_input.json 파일에서 '입력내용' 필드를 읽어온다.
-    오류 시 예외 발생 → 상위에서 500 리턴
-    """
-    try:
-        with USER_INPUT_PATH.open(encoding="utf-8") as f:
-            data = json.load(f)
-        return str(data.get("입력내용", "")).strip()
-    except FileNotFoundError:
-        raise FileNotFoundError(f"{USER_INPUT_PATH} not found")
+def _get_user_prompt() -> str:
+    """### 변경점:  로컬 JSON에서 '입력내용' 필드를 읽어온다."""
+    if not USER_JSON.exists():
+        raise FileNotFoundError(f"{USER_JSON} not found")
+    obj = json.loads(USER_JSON.read_text(encoding="utf-8"))
+    return obj.get("입력내용", "").strip()
 
 # ──────────────── 4) 엔드포인트 ────────────────
 @app.get("/")
@@ -81,18 +72,18 @@ async def root():
 
 @app.post("/gemini")
 async def extract_features():
-    """download/user_input.json → 4-feature 추출"""
+    """### 변경점:  HTTP body 없이 로컬 파일만 사용"""
     if not api_key:
         return JSONResponse(status_code=500, content={"reply": "API key not set"})
+
     try:
-        user_text = _load_user_input()
+        user_text = _get_user_prompt()
         if not user_text:
-            return JSONResponse(status_code=400, content={"reply": "입력내용 비어있음"})
+            return JSONResponse(status_code=400, content={"reply": "No input in file"})
     except Exception as e:
-        logger.exception("user_input.json 읽기 실패")
         return JSONResponse(status_code=500, content={"reply": str(e)})
 
-    model = genai.GenerativeModel("gemini-2.0-flash")
+    model  = genai.GenerativeModel("gemini-2.0-flash")
     prompt = _load_system_prompt()
 
     try:
@@ -107,14 +98,14 @@ async def extract_features():
 
 @app.post("/recommendations")
 async def get_recommendations(req: RecommendationRequest):
-    """shop_type만 받아서 추천 결과 반환"""
+    """shop_type만 받아서 추천 JSON + 파일 저장"""
     if not api_key:
         return JSONResponse(status_code=500, content={"detail": "API key not set"})
 
-    # 1) 사용자 의도 4-feature 추출
+    # 1) 사용자 의도 4-feature 추출 (로컬 파일 → Gemini)
     try:
-        user_text = _load_user_input()
-        model = genai.GenerativeModel("gemini-2.0-flash")
+        user_text = _get_user_prompt()
+        model  = genai.GenerativeModel("gemini-2.0-flash")
         prompt = _load_system_prompt()
         feat_txt = model.generate_content([
             {"role": "user", "parts": [prompt]},
@@ -125,12 +116,13 @@ async def get_recommendations(req: RecommendationRequest):
         logger.exception("Feature extraction 실패")
         return JSONResponse(status_code=500, content={"detail": str(e)})
 
-    # 2) DB 유사도 기반 추천
+    # 2) DB 유사도 기반 추천 (파일 저장 포함)
     try:
         result = cosine_db.recommend_shops(
-            shop_type=req.shop_type,
-            user_features=user_feats,
-            top_k=3,
+            shop_type = req.shop_type,
+            user_features = user_feats,
+            top_k = 3,
+            save_path = Path("output/recommendations.json"),   #  ← 저장 경로
         )
         return result
     except Exception as e:
