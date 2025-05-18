@@ -35,8 +35,8 @@ document.addEventListener("DOMContentLoaded", () => {
       document.getElementById("result").innerText = "텍스트를 먼저 선택해 주세요.";
       return;
     }
-    const url = "http://52.64.19.79:8000/gemini";
-    //const url = "http://localhost:8000/gemini";
+    // const url = "http://52.64.19.79:8000/gemini";
+    const url = "http://localhost:8000/gemini";
 
     try {
       const res = await fetch(url, {
