@@ -13,7 +13,7 @@ import os, json, logging
 from pathlib import Path
 from collections import defaultdict
 from typing import Dict, List, Tuple, Any, Sequence
-
+               
 import numpy as np
 import psycopg
 import google.generativeai as genai
@@ -86,7 +86,7 @@ def recommend_shops(
 
     # 3-2) 각 리뷰 → feature 추출 → 임베딩 → cosine
     review_scores: List[Tuple[str, float, str]] = []  # (shop, score, review_txt)
-    for rev in reviews:
+    for rev in reviews:            
         try:
             feats = _extract_features(rev["review"])
             rev_vecs = {k: _embed_text(v) for k, v in feats.items() if k in user_vecs}

@@ -1,5 +1,5 @@
 document.addEventListener("DOMContentLoaded", () => {
-  const textBox = document.getElementById("text");
+  const textBox = document.getElementById("text");//popup html의 text id에 표시
 
   // Get selected text from current tab
   chrome.tabs.query({ active: true, currentWindow: true }, ([tab]) => {
@@ -35,8 +35,8 @@ document.addEventListener("DOMContentLoaded", () => {
       document.getElementById("result").innerText = "텍스트를 먼저 선택해 주세요.";
       return;
     }
-    const url = "http://3.27.231.20:8000/gemini";
-    //const url = "http://localhost:8000/gemini";
+    // const url = "http://3.27.231.20:8000/gemini";
+    const url = "http://localhost:8000/gemini";
 
     try {
       const res = await fetch(url, {

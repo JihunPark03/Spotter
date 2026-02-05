@@ -43,10 +43,13 @@ app.add_middleware(
 class RecommendationRequest(BaseModel):
     """shop_type 만 받는다.  (user text 는 로컬 파일에서 읽어옴)"""
     shop_type: str = Field(..., example="식당", description="숙박 | 식당 | 미용")
+    user_text: str
+
+class GeminiRequest(BaseModel):
+    text: str
 
 # ──────────────── 3) 공통 유틸 ────────────────
 PROMPT_PATH = Path("gemini_prompt.txt")
-USER_JSON   = Path("download/user_input.json")      # ← ★ 로컬 입력 경로
 
 def _load_system_prompt() -> str:
     try:
@@ -58,32 +61,21 @@ def _load_system_prompt() -> str:
             "(must include location)."
         )
 
-def _get_user_prompt() -> str:
-    """### 변경점:  로컬 JSON에서 '입력내용' 필드를 읽어온다."""
-    if not USER_JSON.exists():
-        raise FileNotFoundError(f"{USER_JSON} not found")
-    obj = json.loads(USER_JSON.read_text(encoding="utf-8"))
-    return obj.get("입력내용", "").strip()
-
 # ──────────────── 4) 엔드포인트 ────────────────
 @app.get("/")
 async def root():
     return {"status": "online", "message": "Spotter API is running"}
 
 @app.post("/gemini")
-async def extract_features():
-    """### 변경점:  HTTP body 없이 로컬 파일만 사용"""
+async def extract_features(req: GeminiRequest):
+    user_text = req.text.strip()
+    if not user_text:
+        return JSONResponse(status_code=400, content={"reply": "Empty user_text"})
+
     if not api_key:
         return JSONResponse(status_code=500, content={"reply": "API key not set"})
 
-    try:
-        user_text = _get_user_prompt()
-        if not user_text:
-            return JSONResponse(status_code=400, content={"reply": "No input in file"})
-    except Exception as e:
-        return JSONResponse(status_code=500, content={"reply": str(e)})
-
-    model  = genai.GenerativeModel("gemini-2.0-flash")
+    model  = genai.GenerativeModel("gemini-2.5-flash-lite")
     prompt = _load_system_prompt()
 
     try:
@@ -98,13 +90,12 @@ async def extract_features():
 
 @app.post("/recommendations")
 async def get_recommendations(req: RecommendationRequest):
-    """shop_type만 받아서 추천 JSON + 파일 저장"""
+    user_text = req.user_text.strip()
     if not api_key:
         return JSONResponse(status_code=500, content={"detail": "API key not set"})
 
     # 1) 사용자 의도 4-feature 추출 (로컬 파일 → Gemini)
     try:
-        user_text = _get_user_prompt()
         model  = genai.GenerativeModel("gemini-2.0-flash")
         prompt = _load_system_prompt()
         feat_txt = model.generate_content([
