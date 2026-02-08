@@ -36,17 +36,33 @@ document.addEventListener("DOMContentLoaded", () => {
       return;
     }
     // const url = "http://3.27.231.20:8000/gemini";
-    const url = "http://localhost:8000/gemini";
+    const url1 = "http://localhost:8000/gemini";
+    const url2 = "http://localhost:8000/detect-ad";
 
     try {
-      const res = await fetch(url, {
+      const res = await fetch(url1, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text: inputText }),
+      });
+      const res1 = await fetch(url2, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ text: inputText }),
       });
 
-      const data = await res.json();
-      document.getElementById("result").innerText = data.reply || "응답이 없습니다.";
+      const gem_data = await res.json();
+      document.getElementById("result").innerText = gem_data.reply || "응답이 없습니다.";
+
+      const rate_data = await res1.json();
+      const score = Number(rate_data.prob_ad ?? 0);
+      // progress.js에 정의된 함수 재사용 → 추가 API 호출 없이 바 업데이트
+      if (typeof window.updateProgress === "function") {
+        window.updateProgress(score);
+      } else {
+        document.getElementById("number").innerText = rate_data.prob_ad || "응답이 없습니다.";
+      }
+
     } catch (err) {
       console.error("API Error:", err);
       document.getElementById("result").innerText = "서버 오류가 발생했습니다.";

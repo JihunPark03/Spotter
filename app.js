@@ -1,11 +1,10 @@
 // app.js
 async function init() {
     try {
-      // 백엔드에서 숫자를 가져온다. (예: /api/score 가 { "value": 73 } 반환)
-    //   const res   = await fetch("/api/score");
-    //   const data  = await res.json();
-    //   const value = data.value;
-    value = 19; // 테스트용
+      const res   = await fetch("/api/detect-ad");
+      const data  = await res.json();
+      const value = data.prob_ad;
+      // value = 50; // 테스트용
   
       // 요소 선택
       const numberEl  = document.getElementById("number");
