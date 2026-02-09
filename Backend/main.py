@@ -30,8 +30,6 @@ if not api_key:
 else:
     client = genai.Client(api_key=api_key)
 
-# cosine_db import after genai init
-import cosine_db  # noqa: E402
 
 app = FastAPI(
     title="Spotter API",
@@ -104,7 +102,7 @@ async def extract_features(req: GeminiRequest):
     # [NEW SDK USAGE]
     try:
         response = client.models.generate_content(
-            model="gemini-2.0-flash",
+            model="gemini-2.5-flash-lite",
             contents=user_text,
             config=types.GenerateContentConfig(
                 system_instruction=_load_system_prompt(),
@@ -115,42 +113,6 @@ async def extract_features(req: GeminiRequest):
     except Exception as e:
         logger.exception("Gemini extraction failed")
         return JSONResponse(status_code=500, content={"reply": str(e)})
-
-@app.post("/recommendations")
-async def get_recommendations(req: RecommendationRequest):
-    user_text = req.user_text.strip()
-    if not client:
-        return JSONResponse(status_code=500, content={"detail": "API key not set"})
-
-    # 1) User Intent Extraction
-    try:
-        # [NEW SDK USAGE]
-        response = client.models.generate_content(
-            model="gemini-2.0-flash",
-            contents=user_text,
-            config=types.GenerateContentConfig(
-                system_instruction=_load_system_prompt()
-            )
-        )
-        feat_txt = response.text
-        
-        user_feats = cosine_db.parse_feature_output(feat_txt)
-    except Exception as e:
-        logger.exception("Feature extraction failed")
-        return JSONResponse(status_code=500, content={"detail": str(e)})
-
-    # 2) DB Similarity Recommendation
-    try:
-        result = cosine_db.recommend_shops(
-            shop_type = req.shop_type,
-            user_features = user_feats,
-            top_k = 3,
-            save_path = Path("output/recommendations.json"),
-        )
-        return result
-    except Exception as e:
-        logger.exception("Recommendation failed")
-        return JSONResponse(status_code=500, content={"detail": str(e)})
 
 # ──────────────── 5) Local Run ────────────────
 if __name__ == "__main__":

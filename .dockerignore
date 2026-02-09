@@ -1,0 +1,25 @@
+# Git and IDE
+.git
+.gitignore
+*.swp
+*.swo
+*.log
+*.ipynb
+__pycache__
+*.pyc
+
+# Python envs
+Backend/venv
+.env
+.env.*
+
+# Node/Chrome
+node_modules
+npm-debug.log
+yarn-error.log
+
+# Build artifacts
+*.tar
+*.zip
+*.gz
+*.tgz

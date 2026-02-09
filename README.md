@@ -51,6 +51,37 @@ Based on the GDGoC Korea X Japan The Bridge Hackathon presentation. citetu
 1. Install the Spotter Chrome Extension.  
 2. Pin the extension to your browser toolbar.
 
+### Run the backend with Docker
+
+The FastAPI backend (Gemini + ad detector) is now containerized. Build once, then run on port 8000.
+
+1) Copy and fill environment variables:
+```bash
+cp Backend/.env.example Backend/.env
+# edit Backend/.env with your GOOGLE_API_KEY and Postgres settings (DB_* only needed for /recommendations)
+```
+
+2) Build the image (includes the KO FastText vectors and LSTM weights):
+```bash
+docker compose build
+```
+
+3) Start the API:
+```bash
+docker compose up -d
+# or: docker compose up --build to rebuild and run at once
+```
+
+4) Verify it is running on http://localhost:8000 :
+```bash
+curl http://localhost:8000/
+```
+
+Notes
+- The image is large because it bundles `cc.ko.300.bin` (~1.3GB) and `ad_model/model_weights.pth`.
+- `Backend/output` is mounted as a volume so recommendation results persist outside the container.
+- Without a Postgres database, `/detect-ad` and `/gemini` work; `/recommendations` will fail with a DB error.
+
 ### Usage
 
 1. **Step 1:** Open any page with user reviews.  

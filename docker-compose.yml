@@ -1,0 +1,11 @@
+services:
+  api:
+    build: .
+    container_name: spotter-api
+    env_file:
+      - Backend/.env
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./Backend/output:/app/Backend/output
+    restart: unless-stopped
