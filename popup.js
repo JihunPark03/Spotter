@@ -53,8 +53,14 @@ document.addEventListener("DOMContentLoaded", () => {
 
       const gem_data = await res.json();
       document.getElementById("result").innerText = gem_data.reply || "응답이 없습니다.";
+      if (gem_data.cached) {
+          console.log("Gemini: cache hit");
+      }
 
       const rate_data = await res1.json();
+      if (rate_data.cached) {
+        console.log("Detect-ad: cache hit");
+      }
       const score = Number(rate_data.prob_ad ?? 0);
       // progress.js에 정의된 함수 재사용 → 추가 API 호출 없이 바 업데이트
       if (typeof window.updateProgress === "function") {
