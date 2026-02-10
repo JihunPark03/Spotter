@@ -3,13 +3,13 @@ FROM python:3.10-slim-bookworm
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
        build-essential \
-       libpq-dev \
        openjdk-17-jre-headless \
     && rm -rf /var/lib/apt/lists/*
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
-    JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64
+    JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64 \
+    FASTTEXT_PATH=/models/cc.ko.300.bin
 
 WORKDIR /app
 

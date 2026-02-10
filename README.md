@@ -53,7 +53,7 @@ Based on the GDGoC Korea X Japan The Bridge Hackathon presentation. citetu
 
 ### Run the backend with Docker
 
-The FastAPI backend (Gemini + ad detector) is now containerized. Build once, then run on port 8000.
+The FastAPI backend (Gemini + ad detector) is now containerized. The recommendation system/DB dependencies are stripped for this build.
 
 1) Copy and fill environment variables:
 ```bash
@@ -78,9 +78,9 @@ curl http://localhost:8000/
 ```
 
 Notes
-- The image is large because it bundles `cc.ko.300.bin` (~1.3GB) and `ad_model/model_weights.pth`.
-- `Backend/output` is mounted as a volume so recommendation results persist outside the container.
-- Without a Postgres database, `/detect-ad` and `/gemini` work; `/recommendations` will fail with a DB error.
+- Mount your FastText binary from GCP (or other storage) to `/models/cc.ko.300.bin` or set `FASTTEXT_PATH` in the container environment.
+- `ad_model/model_weights.pth` stays in the image; `cc.ko.300.bin` is excluded from the build context to keep images lighter.
+- The `/recommendations` endpoint is disabled (returns 501) in this deployment; only `/detect-ad` and `/gemini` are active.
 
 ### Usage
 

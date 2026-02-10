@@ -23,3 +23,6 @@ yarn-error.log
 *.zip
 *.gz
 *.tgz
+
+# Large model assets handled externally
+Backend/cc.ko.300.bin
