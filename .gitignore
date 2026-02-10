@@ -1,3 +1,7 @@
 Backend/.env
 Backend/cc.ko.300.bin
 .DS_Store
+Backend/venv/
+Backend/__pycache__/
+Backend/ad_model/__pycache__/
+Backend/*.log
