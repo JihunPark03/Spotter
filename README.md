@@ -1,122 +1,45 @@
-# Spotter: Review Verification Platform
+# Spotter Chrome Extension (Ad Detector + Gemini)
 
-**A Chrome Extension to detect advertising reviews and show only reliable reviews**  
-Based on the GDGoC Korea X Japan The Bridge Hackathon presentation. citeturn0file0
+Lightweight guide to load the extension; backend is already running on GCP. Recommendation/cosine DB is not included.
 
----
+## Model in use
+The ad detector is an LSTM with self‑attention: tokens are embedded, an LSTM encodes the sequence, a learned attention matrix highlights impactful positions, and the weighted sequence feeds a linear layer to output the ad probability. Attention weights give interpretability by showing which words drove the decision.
+**Language caution:** the model is trained on Korean-only data; analysis for other languages is unsupported and may be inaccurate.
 
-## Background
+## What’s in this repo
+- Chrome extension UI (popup, background, content scripts).
+- Backend client calls:
+  - `/gemini` — summarizes the selected review text.
+  - `/detect-ad` — returns ad likelihood (`prob_ad`).
+- Recommendation endpoint is disabled; commented code is not part of this release.
 
-- Travelers rely heavily on online reviews for travel planning:
-  - 95% of travelers refer to online reviews before booking.
-  - On average, tourists read 6–7 reviews and spend about 30 minutes doing so.  
-- However, review credibility has declined due to:
-  - **Sponsored and misleading blog posts** – influencers failing to clearly label paid content.
-  - **AI-generated and paid reviews** – apps like “Misik” create reviews for rewards.
-  - **Review-swapping and paid search manipulation**.  
-- Generation Z especially blocks ads and seeks authentic, honest reviews.  
-  **Insight:** Gen Z consumers need services to help them identify honest reviews and avoid advertisements.
+## Load the extension in Chrome
+1) Open `chrome://extensions/` and enable **Developer mode** (top-right toggle).  
+2) Click **Load unpacked** and select this project folder (where `manifest.json` lives).  
+3) Pin “Spotter” to the toolbar for quick access.
 
----
+## Use it
+1) Go to any page with reviews.  
+2) Highlight the review text, then click the Spotter icon. The selected text appears in the popup.  
+3) Press **Send**. The popup calls your backend and shows:
+   - Gemini summary in the result box.
+   - Ad likelihood score via the progress bar/number.
 
-## Key Features
+## Examples
+For example, this was tested on the following dining review website (https://www.diningcode.com/profile.php?rid=EITqsITml3kq)
+Popup view (analysis result):
+![Popup analysis](Screenshot 2026-02-11 at 12.24.37.png)
 
-1. **Chrome Extension**  
-   - Validate reviews anywhere on the web with a simple drag-and-drop.  
-2. **Explainable AI**  
-   - **Model Choice 1:** Pre-trained KO-BERT  
-     - F1-Score: 98% (2,080 Naver review texts)  
-   - **Model Choice 2:** LSTM + Attention  
-     - F1-Score: 99%  
-     - Attention mechanism highlights keywords for interpretability.  
-3. **Gemini API Integration**  
-   - Query filtering, feature extraction, and similarity analysis with Gemini.  
-   - Recommend shops and restaurants based on authenticated reviews.  
+Progress bar and summary update:
+![Progress and summary](Screenshot 2026-02-11 at 12.25.40.png)
 
----
 
-## Architecture Overview
+## Troubleshooting
+- If you see “서버 오류”, confirm the backend URL in `popup.js` points to your deployed service and CORS is enabled there.
+- Make sure your backend has `GOOGLE_API_KEY` set; without it `/gemini` returns 500.
+- Recommendation requests will return HTTP 501 by design in this build.
 
-1. **User Query**  
-2. **Query Filtering / Feature Extraction** via Spotter & Gemini  
-3. **Similarity Analysis** against backend database  
-4. **Recommendations** of shops/restaurants with reliable reviews  
-
----
-
-## Getting Started
-
-### Installation
-
-1. Install the Spotter Chrome Extension.  
-2. Pin the extension to your browser toolbar.
-
-### Run the backend with Docker
-
-The FastAPI backend (Gemini + ad detector) is now containerized. The recommendation system/DB dependencies are stripped for this build.
-
-1) Copy and fill environment variables:
-```bash
-cp Backend/.env.example Backend/.env
-# edit Backend/.env with your GOOGLE_API_KEY and Postgres settings (DB_* only needed for /recommendations)
-```
-
-2) Build the image (includes the KO FastText vectors and LSTM weights):
-```bash
-docker compose build
-```
-
-3) Start the API:
-```bash
-docker compose up -d
-# or: docker compose up --build to rebuild and run at once
-```
-
-4) Verify it is running on http://localhost:8000 :
-```bash
-curl http://localhost:8000/
-```
-
-Notes
-- Mount your FastText binary from GCP (or other storage) to `/models/cc.ko.300.bin` or set `FASTTEXT_PATH` in the container environment.
-- `ad_model/model_weights.pth` stays in the image; `cc.ko.300.bin` is excluded from the build context to keep images lighter.
-- The `/recommendations` endpoint is disabled (returns 501) in this deployment; only `/detect-ad` and `/gemini` are active.
-
-### Usage
-
-1. **Step 1:** Open any page with user reviews.  
-2. **Step 2:** Drag the text of a review into the Spotter popup to analyze it.  
-3. **Step 3:** View the binary classification and AI-generated summary:  
-   - Icons and colors indicate review authenticity and confidence.  
-4. **Step 4:** Search for places by type and location; read only verified, reliable reviews.
-
----
-
-## Expansion & Community Contributions
-
-- **Validate Others' Reviews:**  
-  - Contribute by verifying and uploading results to improve service reliability.  
-- **More Accurate Reviews:**  
-  - View reviews from the **same place**, **nearby restaurants**, or **similar restaurants**.  
-- **Multilingual Support:**  
-  - Offer Korean, English, and Japanese interfaces to expand overseas tourist users.  
-
----
-
-## Team Members
-
-- **GEONWOO KIM (Yonsei U.)** – AI/ML/DL Engineer  
-- **Sungwon Jeon (Korea U.)** – UX/UI Designer  
-- **Jaeseung Lee (Korea U.)** – Project Manager / Web Frontend  
-- **Jihun Park (Waseda U.)** – Web Frontend / Backend Engineer  
-
----
-
-## Acknowledgements
-
-Thank you for trying out Spotter!  
-감사합니다. ありがとうございます。
-
----
-
-_Source: GDGoC.pdf – Spotter presentation_ citeturn0file0
+## File map (frontend)
+- `popup.html`, `popup.js`, `style.css` — extension UI.
+- `background.js`, `contentScript.js` — tab interaction and text selection.
+- `manifest.json` — extension manifest (Manifest V3).
