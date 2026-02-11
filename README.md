@@ -26,7 +26,8 @@ The ad detector is an LSTM with self‑attention: tokens are embedded, an LSTM e
    - Ad likelihood score via the progress bar/number.
 
 ## Examples
-For example, this was tested on the following dining review website (https://www.diningcode.com/profile.php?rid=EITqsITml3kq)
+For example, Spotter was tested on the following dining review website (https://www.diningcode.com/profile.php?rid=EITqsITml3kq)
+
 Popup view (analysis result):
 ![Popup analysis](assets/screenshots/popup-analysis.png)
 
