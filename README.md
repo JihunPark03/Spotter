@@ -28,10 +28,10 @@ The ad detector is an LSTM with self‑attention: tokens are embedded, an LSTM e
 ## Examples
 For example, this was tested on the following dining review website (https://www.diningcode.com/profile.php?rid=EITqsITml3kq)
 Popup view (analysis result):
-![Popup analysis](Screenshot 2026-02-11 at 12.24.37.png)
+![Popup analysis](assets/screenshots/popup-analysis.png)
 
 Progress bar and summary update:
-![Progress and summary](Screenshot 2026-02-11 at 12.25.40.png)
+![Progress and summary](assets/screenshots/progress-summary.png)
 
 
 ## Troubleshooting
