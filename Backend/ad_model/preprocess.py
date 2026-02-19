@@ -4,7 +4,10 @@ from konlpy.tag import Okt
 PAD_LEN = 800
 EMB_DIM = 300
 
-FT_PATH = os.getenv("FASTTEXT_PATH", "cc.ko.300.bin")
+# FT_PATH = os.getenv("FASTTEXT_PATH", "cc.ko.300.bin")
+
+# on server
+FT_PATH = os.getenv("FASTTEXT_PATH", "models/cc.ko.300.bin")
 HASHTAG_RE = re.compile(r"#\S+")
 STOPWORDS = [...]
 
