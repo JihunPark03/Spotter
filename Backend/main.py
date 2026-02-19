@@ -16,6 +16,8 @@ from ad_model.inference import predict_prob
 import hashlib
 from typing import Dict, Any
 import time
+import redis
+import json
 
 
 
@@ -74,28 +76,34 @@ def _load_system_prompt() -> str:
         )
     
 # ──────────────── Utils: Cache ────────────────
-CACHE_TTL = 60 * 60 
-CACHE: Dict[str, Dict[str, Any]] = {}
+# CACHE_TTL = 60 * 60 
+# CACHE: Dict[str, Dict[str, Any]] = {}
+
+CACHE_TTL = 3600  
+
+redis_client = redis.Redis(
+    host="10.250.241.83",
+    port=6379,
+    decode_responses=True
+)
 
 def make_cache_key(text: str) -> str:
-    return hashlib.sha256(text.strip().encode("utf-8")).hexdigest()
+    hash_key = hashlib.sha256(text.strip().encode("utf-8")).hexdigest()
+    return f"summary:{hash_key}"
 
 def get_cache(key: str):
-    entry = CACHE.get(key)
-    if not entry:
+    data = redis_client.get(key)
+    if not data:
         return None
 
-    if time.time() > entry["expires_at"]:
-        del CACHE[key]
-        return None
-
-    return entry["data"]
+    return json.loads(data)
 
 def set_cache(key: str, data: dict):
-    CACHE[key] = {
-        "data": data,
-        "expires_at": time.time() + CACHE_TTL
-    }
+    redis_client.set(
+        key,
+        json.dumps(data),
+        ex=CACHE_TTL
+    )
 
 # ──────────────── Endpoints ────────────────
 @app.get("/")
