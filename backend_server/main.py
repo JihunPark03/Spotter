@@ -12,7 +12,7 @@ from dotenv import load_dotenv
 # [NEW SDK IMPORT]
 from google import genai
 from google.genai import types
-from ad_model.inference import predict_prob
+from ml_client import request_inference
 import hashlib
 from typing import Dict, Any
 import time
@@ -79,14 +79,18 @@ def _load_system_prompt() -> str:
 # CACHE_TTL = 60 * 60 
 # CACHE: Dict[str, Dict[str, Any]] = {}
 
-CACHE_TTL = 3600  
+CACHE_TTL = 3600
+REDIS_HOST = os.getenv("REDIS_HOST", "localhost")
+REDIS_PORT = int(os.getenv("REDIS_PORT", 6379))
 
+# Short socket timeouts so the API never hangs if Redis is unreachable.
 redis_client = redis.Redis(
-    host="10.250.241.83",
-    port=6379,
-    decode_responses=True
+    host=REDIS_HOST,
+    port=REDIS_PORT,
+    decode_responses=True,
+    socket_connect_timeout=0.5,
+    socket_timeout=0.5,
 )
-
 def make_cache_key(text: str) -> str:
     hash_key = hashlib.sha256(text.strip().encode("utf-8")).hexdigest()
     return f"summary:{hash_key}"
@@ -124,7 +128,7 @@ async def detect_ad(req: AdDetectRequest):
             "cached": True
         }
 
-    prob = predict_prob(text)
+    prob = request_inference(text)
     result = {
         "prob_ad": round(prob, 4) * 100,
         "is_ad": prob >= 0.5

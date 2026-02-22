@@ -35,11 +35,11 @@ document.addEventListener("DOMContentLoaded", () => {
       document.getElementById("result").innerText = "텍스트를 먼저 선택해 주세요.";
       return;
     }
-    // const url1 = "http://localhost:8000/gemini";
-    // const url2 = "http://localhost:8000/detect-ad";
+    const url1 = "http://localhost:8000/gemini";
+    const url2 = "http://localhost:8000/detect-ad";
 
-    const url1 = "http://34.174.89.222:8000/gemini";
-    const url2 = "http://34.174.89.222:8000/detect-ad";
+    // const url1 = "http://34.174.89.222:8000/gemini";
+    // const url2 = "http://34.174.89.222:8000/detect-ad";
 
     try {
       const res = await fetch(url1, {

@@ -1,12 +1,12 @@
 import torch
 import numpy as np
-from .model import LSTMAttn
-from .preprocess import preprocess, sent2matrix
+from model import LSTMAttn
+from preprocess import preprocess, sent2matrix
 
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 
 model = LSTMAttn().to(DEVICE)
-model.load_state_dict(torch.load("ad_model/model_weights.pth", map_location=DEVICE))
+model.load_state_dict(torch.load("models/model_weights.pth", map_location=DEVICE))
 model.eval()
 
 def predict_prob(text: str) -> float:
