@@ -1,23 +1,22 @@
 # ──────────────────────────────────────────────────────────────
 # main.py   (Spotter API v0.3.0)
 # ──────────────────────────────────────────────────────────────
-from fastapi import FastAPI
+from fastapi import FastAPI, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 import logging, os
-from pathlib import Path
 from dotenv import load_dotenv
+from contextlib import asynccontextmanager
+from sqlalchemy.orm import Session
 
 # [NEW SDK IMPORT]
 from google import genai
-from google.genai import types
-from ml_client import request_inference
-import hashlib
-from typing import Dict, Any
-import time
-import redis
-import json
+from backend_server.services.detect_service import detect_ad as detect_service
+from backend_server.services.gemini_service import extract_features as gemini_service
+from backend_server.services.feedback_service import FeedbackService
+from backend_server.repositories.feedback_repository import FeedbackRepository
+from backend_server.db_init import get_db, create_tables
 
 
 
@@ -27,6 +26,15 @@ logger = logging.getLogger(__name__)
 
 load_dotenv()
 api_key = os.getenv("GOOGLE_API_KEY")
+
+# Create tables on startup
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    print("Creating database tables...")
+    create_tables()
+    yield  # Allow FastAPI to start
+    print("FastAPI is shutting down...")  # Shutdown logic (optional)
+    
 
 # [NEW SDK CLIENT INIT]
 # The client is reusable. We initialize it once if the key exists.
@@ -40,6 +48,7 @@ app = FastAPI(
     title="Spotter API",
     description="Backend API for the Spotter Chrome Extension",
     version="0.3.0",
+    lifespan=lifespan
 )
 
 app.add_middleware(
@@ -49,6 +58,7 @@ app.add_middleware(
     allow_headers=["*"],
     allow_credentials=True,
 )
+
 
 # ──────────────── Pydantic Models ────────────────
 class GeminiRequest(BaseModel):
@@ -62,52 +72,9 @@ class AdDetectResponse(BaseModel):
     is_ad: bool
     cached: bool
 
-# ──────────────── Utils ────────────────
-PROMPT_PATH = Path("gemini_prompt.txt")
-
-def _load_system_prompt() -> str:
-    try:
-        return PROMPT_PATH.read_text(encoding="utf-8")
-    except FileNotFoundError:
-        logger.warning("gemini_prompt.txt not found - fallback prompt used")
-        return (
-            "You are an extractor that outputs exactly four '-키: 값' lines "
-            "(must include location)."
-        )
-    
-# ──────────────── Utils: Cache ────────────────
-# CACHE_TTL = 60 * 60 
-# CACHE: Dict[str, Dict[str, Any]] = {}
-
-CACHE_TTL = 3600
-REDIS_HOST = os.getenv("REDIS_HOST", "localhost")
-REDIS_PORT = int(os.getenv("REDIS_PORT", 6379))
-
-# Short socket timeouts so the API never hangs if Redis is unreachable.
-redis_client = redis.Redis(
-    host=REDIS_HOST,
-    port=REDIS_PORT,
-    decode_responses=True,
-    socket_connect_timeout=0.5,
-    socket_timeout=0.5,
-)
-def make_cache_key(text: str) -> str:
-    hash_key = hashlib.sha256(text.strip().encode("utf-8")).hexdigest()
-    return f"summary:{hash_key}"
-
-def get_cache(key: str):
-    data = redis_client.get(key)
-    if not data:
-        return None
-
-    return json.loads(data)
-
-def set_cache(key: str, data: dict):
-    redis_client.set(
-        key,
-        json.dumps(data),
-        ex=CACHE_TTL
-    )
+class FeedbackRequest(BaseModel):
+    text: str
+    is_ad: bool
 
 # ──────────────── Endpoints ────────────────
 @app.get("/")
@@ -119,27 +86,24 @@ async def detect_ad(req: AdDetectRequest):
     text = req.text.strip()
     if not text:
         return JSONResponse(status_code=400, content={"detail": "Empty text"})
-    
-    key = make_cache_key(text)
-    cached = get_cache(key)
-    if cached and "prob_ad" in cached:
-        return {
-            **cached,
-            "cached": True
-        }
 
-    prob = request_inference(text)
-    result = {
-        "prob_ad": round(prob, 4) * 100,
-        "is_ad": prob >= 0.5
-    }
+    return detect_service(text)
 
-    set_cache(key, result)
-
-    return {
-        **result,
-        "cached": False
-    }
+@app.post("/feedback")
+async def save_feedback(req: FeedbackRequest, db: Session = Depends(get_db)):
+    service = FeedbackService(FeedbackRepository(db))
+    try:
+        fb = service.save_feedback(req.text, req.is_ad)
+        return {"status": "ok", "id": fb.id}
+    except ValueError as ve:
+        return JSONResponse(status_code=400, content={"detail": str(ve)})
+    except Exception:
+        logger.exception("Failed to save feedback")
+        db.rollback()
+        return JSONResponse(
+            status_code=500,
+            content={"detail": "Failed to save feedback"},
+        )
 
 @app.post("/gemini")
 async def extract_features(req: GeminiRequest):
@@ -150,33 +114,9 @@ async def extract_features(req: GeminiRequest):
     if not client:
         return JSONResponse(status_code=500, content={"reply": "API key not set"})
 
-    key = make_cache_key(user_text)
-
-    cached = get_cache(key)
-    if cached and "reply" in cached:
-        return {
-            "reply": cached["reply"],
-            "cached": True
-        }
-
     try:
-        response = client.models.generate_content(
-            model="gemini-2.5-flash-lite",
-            contents=user_text,
-            config=types.GenerateContentConfig(
-                system_instruction=_load_system_prompt(),
-                temperature=0.0
-            )
-        )
-
-        result = {"reply": response.text}
-        set_cache(key, result)
-
-        return {
-            **result,
-            "cached": False
-        }
-
+        result = gemini_service(user_text, client)
+        return result
     except Exception as e:
         logger.exception("Gemini extraction failed")
         return JSONResponse(status_code=500, content={"reply": str(e)})
