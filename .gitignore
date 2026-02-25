@@ -11,4 +11,3 @@ backend_server/venv
 ml_server/venv
 trainer/venv
 .env
-.env.*
