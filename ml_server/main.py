@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from pydantic import BaseModel
 
-from inference import predict_prob
+from inference import predict_prob, load_model
 
 app = FastAPI()
 
@@ -22,3 +22,9 @@ def predict(payload: PredictRequest):
     """
     prob = predict_prob(payload.text)
     return {"prob_ad": prob}
+
+@app.post("/reload-model")
+def reload_model():
+    print("Reloading model...")
+    load_model()
+    return {"status": "reloaded"}

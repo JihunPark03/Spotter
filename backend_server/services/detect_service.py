@@ -1,5 +1,5 @@
-from backend_server.ml_client import request_inference
-from backend_server.utils.cache import make_cache_key, get_cache, set_cache
+from ml_client import request_inference
+from utils.cache import make_cache_key, get_cache, set_cache
 
 
 def detect_ad(text: str):

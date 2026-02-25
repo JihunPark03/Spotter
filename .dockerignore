@@ -9,7 +9,9 @@ __pycache__
 *.pyc
 
 # Python envs
-Backend/venv
+backend_server/venv
+ml_server/venv
+trainer/venv
 .env
 .env.*
 
