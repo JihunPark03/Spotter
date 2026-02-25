@@ -1,3 +1,5 @@
+import { API } from "./config.js";
+
 document.addEventListener("DOMContentLoaded", () => {
   const textBox = document.getElementById("text");//popup html의 text id에 표시
 
@@ -35,13 +37,9 @@ document.addEventListener("DOMContentLoaded", () => {
       document.getElementById("result").innerText = "텍스트를 먼저 선택해 주세요.";
       return;
     }
-    //local
-    // const url1 = "http://localhost:8000/gemini";
-    // const url2 = "http://localhost:8000/detect-ad";
 
-    //server
-    const url1 = "http://34.174.35.119:8000/gemini";
-    const url2 = "http://34.174.35.119:8000/detect-ad";
+    const url1 = API.GEMINI;
+    const url2 = API.DETECT_AD;
 
     try {
       const res = await fetch(url1, {

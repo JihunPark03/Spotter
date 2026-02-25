@@ -22,11 +22,11 @@ if DB_URL is None:
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 MODEL_DIR = os.path.join(BASE_DIR, "ml_server", "models")
-#local
-#ML_SERVER_RELOAD_URL = "http://localhost:8001/reload-model"
 
-#server
-ML_SERVER_RELOAD_URL = "http://34.174.35.119:8001/reload-model"
+ML_SERVER_RELOAD_URL = os.getenv(
+    "ML_SERVER_RELOAD_URL",
+    "http://localhost:8001/reload-model"
+)
 
 THRESHOLD = 5   # 최소 학습 데이터 수
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
