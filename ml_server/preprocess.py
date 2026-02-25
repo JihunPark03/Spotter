@@ -16,17 +16,22 @@ STOPWORDS = [...]
 _ft = None
 _okt = None
 
-def get_ft():
-    global _ft
+def preload_assets():
+    global _ft, _okt
+
     if _ft is None:
+        print("[ML] Loading FastText...")
         _ft = fasttext.load_model(FT_PATH)
-    print("Fasttext loaded")    
+
+    if _okt is None:
+        print("[ML] Initializing Okt...")
+        _okt = Okt()
+
+
+def get_ft():
     return _ft
 
 def get_okt():
-    global _okt
-    if _okt is None:
-        _okt = Okt()
     return _okt
 
 def preprocess(text: str):

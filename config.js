@@ -1,4 +1,4 @@
-export const ENV = "local"; // "local" | "server"
+export const ENV = "server"; // "local" | "server"
 
 const URLS = {
   local: "http://localhost:8000",

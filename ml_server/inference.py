@@ -51,17 +51,14 @@ def load_model():
     model = new_model
     current_model_path = latest_path
 
-
+@torch.no_grad()
 def predict_prob(text: str) -> float:
-    load_model()
-
     tokens = preprocess(text)
     mat = sent2matrix(tokens)
 
-    x = torch.from_numpy(np.array(mat)).float().unsqueeze(0).to(DEVICE)
+    x = torch.from_numpy(mat).unsqueeze(0).to(DEVICE)
 
-    with torch.no_grad():
-        logit = model(x)
-        prob = torch.sigmoid(logit).item()
+    logit = model(x)
+    prob = torch.sigmoid(logit).item()
 
     return prob
