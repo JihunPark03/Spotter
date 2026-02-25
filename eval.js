@@ -14,7 +14,11 @@ document.addEventListener("DOMContentLoaded", () => {
   };
 
   const PLACEHOLDER = "리뷰를 드래그해서 선택하세요.";
-  const FEEDBACK_URL = "http://localhost:8000/feedback";
+  //local
+  // const FEEDBACK_URL = "http://localhost:8000/feedback";
+
+  //server
+  const FEEDBACK_URL = "http://34.174.35.119:8000/feedback"
 
   // Load previously selected text from storage (set in popup.js)
   chrome.storage.local.get("selectedText", ({ selectedText }) => {
