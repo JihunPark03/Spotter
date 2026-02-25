@@ -1,5 +1,5 @@
 from sqlalchemy.orm import Session
-from backend_server.models import Feedback
+from models import Feedback
 
 
 class FeedbackRepository:

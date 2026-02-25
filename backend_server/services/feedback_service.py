@@ -1,4 +1,4 @@
-from backend_server.repositories.feedback_repository import FeedbackRepository
+from repositories.feedback_repository import FeedbackRepository
 
 
 class FeedbackService:

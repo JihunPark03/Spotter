@@ -1,6 +1,6 @@
 from google import genai
 from google.genai import types
-from backend_server.utils.cache import make_cache_key, get_cache, set_cache
+from utils.cache import make_cache_key, get_cache, set_cache
 from pathlib import Path
 import logging
 

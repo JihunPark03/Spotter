@@ -4,7 +4,12 @@ from konlpy.tag import Okt
 PAD_LEN = 800
 EMB_DIM = 300
 
-FT_PATH = os.getenv("FASTTEXT_PATH", "models/cc.ko.300.bin")
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
+FT_PATH = os.getenv(
+    "FASTTEXT_PATH",
+    os.path.join(BASE_DIR, "models", "cc.ko.300.bin")
+)
 HASHTAG_RE = re.compile(r"#\S+")
 STOPWORDS = [...]
 
@@ -15,6 +20,7 @@ def get_ft():
     global _ft
     if _ft is None:
         _ft = fasttext.load_model(FT_PATH)
+    print("Fasttext loaded")    
     return _ft
 
 def get_okt():

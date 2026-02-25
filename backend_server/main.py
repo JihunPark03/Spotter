@@ -12,11 +12,11 @@ from sqlalchemy.orm import Session
 
 # [NEW SDK IMPORT]
 from google import genai
-from backend_server.services.detect_service import detect_ad as detect_service
-from backend_server.services.gemini_service import extract_features as gemini_service
-from backend_server.services.feedback_service import FeedbackService
-from backend_server.repositories.feedback_repository import FeedbackRepository
-from backend_server.db_init import get_db, create_tables
+from services.detect_service import detect_ad as detect_service
+from services.gemini_service import extract_features as gemini_service
+from services.feedback_service import FeedbackService
+from repositories.feedback_repository import FeedbackRepository
+from db_init import get_db, create_tables
 
 
 
