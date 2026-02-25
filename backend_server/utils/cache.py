@@ -20,11 +20,17 @@ def make_cache_key(text: str) -> str:
 
 
 def get_cache(key: str) -> Optional[Dict[str, Any]]:
-    data = redis_client.get(key)
-    if not data:
+    try:
+        data = redis_client.get(key)
+        if not data:
+            return None
+        return json.loads(data)
+    except redis.exceptions.RedisError as e:
+        print(f"[Redis] get_cache failed: {e}")
         return None
-    return json.loads(data)
-
 
 def set_cache(key: str, data: dict):
-    redis_client.set(key, json.dumps(data), ex=CACHE_TTL)
+    try:
+        redis_client.set(key, json.dumps(data), ex=CACHE_TTL)
+    except redis.exceptions.RedisError as e:
+        print(f"[Redis] set_cache failed: {e}")

@@ -1,3 +1,5 @@
+import { API } from "./config.js";
+
 // Handles evaluation flow on eval.html
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -14,11 +16,8 @@ document.addEventListener("DOMContentLoaded", () => {
   };
 
   const PLACEHOLDER = "리뷰를 드래그해서 선택하세요.";
-  //local
-  // const FEEDBACK_URL = "http://localhost:8000/feedback";
 
-  //server
-  const FEEDBACK_URL = "http://34.174.35.119:8000/feedback"
+  const FEEDBACK_URL = API.FEEDBACK;
 
   // Load previously selected text from storage (set in popup.js)
   chrome.storage.local.get("selectedText", ({ selectedText }) => {

@@ -1,12 +1,10 @@
 import requests
+import os
 
-#local
-# ML_SERVER_URL = "http://localhost:8001/predict"
-
-#server
-ML_SERVER_URL = "http://34.174.35.119:8001/predict"
-
-
+ML_SERVER_URL = os.getenv(
+    "ML_SERVER_URL",
+    "http://localhost:8001/predict" 
+)
 
 def request_inference(text: str) -> float:
     try:
