@@ -19,7 +19,9 @@ if DB_URL.startswith("postgresql+psycopg://"):
 if DB_URL is None:
     raise RuntimeError("DATABASE_URL not set")
 
-MODEL_DIR = "../ml-server/models"
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+MODEL_DIR = os.path.join(BASE_DIR, "ml_server", "models")
 ML_SERVER_RELOAD_URL = "http://localhost:8001/reload-model"
 
 THRESHOLD = 5   # 최소 학습 데이터 수
@@ -134,6 +136,8 @@ def train():
             y = y.to(DEVICE)
 
             logit = model(x) # 모델의 추측값인데 아직 sigmoid layer을 안 거친거
+            # logit의 출력 형태는 [#x]
+            logit = logit.view(-1, 1) 
             loss = loss_fn(logit, y)
 
             optimizer.zero_grad() # optimzer 초기화

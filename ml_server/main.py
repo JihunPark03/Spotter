@@ -2,8 +2,19 @@ from fastapi import FastAPI
 from pydantic import BaseModel
 
 from inference import predict_prob, load_model
+from preprocess import get_ft
 
 app = FastAPI()
+
+
+@app.on_event("startup")
+def preload_assets():
+    """
+    Load heavy assets (PyTorch model + FastText) once at startup
+    to avoid first-request latency.
+    """
+    load_model()
+    get_ft()
 
 
 class PredictRequest(BaseModel):

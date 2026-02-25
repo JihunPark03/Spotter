@@ -20,6 +20,7 @@ def get_ft():
     global _ft
     if _ft is None:
         _ft = fasttext.load_model(FT_PATH)
+    print("Fasttext loaded")    
     return _ft
 
 def get_okt():
