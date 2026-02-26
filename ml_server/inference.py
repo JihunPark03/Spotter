@@ -53,12 +53,15 @@ def load_model():
 
 @torch.no_grad()
 def predict_prob(text: str) -> float:
+    print("0")
     tokens = preprocess(text)
+    print("1")
     mat = sent2matrix(tokens)
-
+    print("2")
     x = torch.from_numpy(mat).unsqueeze(0).to(DEVICE)
-
+    print("3")
     logit = model(x)
+    print("4")
     prob = torch.sigmoid(logit).item()
 
     return prob
