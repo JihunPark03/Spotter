@@ -6,8 +6,55 @@ document.addEventListener("DOMContentLoaded", () => {
   const sendBtn = document.getElementById("send");
   const resultEl = document.getElementById("result");
   const numberEl = document.getElementById("number");
+  const tabCheckText = document.getElementById("tabCheckText");
+  const tabEvalText = document.getElementById("tabEvalText");
+  const reviewTitle = document.getElementById("reviewTitle");
+  const resultTitle = document.getElementById("resultTitle");
+  const aiSummaryTitle = document.getElementById("aiSummaryTitle");
+  const uploadBtn = document.getElementById("uploadBtn");
+  const langToggle = document.getElementById("langToggle");
+  const langToggleLabel = document.getElementById("langToggleLabel");
 
-  const PLACEHOLDER = "리뷰를 드래그해서 선택하세요.";
+  // ===== i18n strings =====
+  const STRINGS = {
+    ko: {
+      placeholder: "리뷰를 드래그해서 선택하세요.",
+      loading: "처리 중...",
+      selectTextFirst: "텍스트를 먼저 선택해 주세요.",
+      serverError: "서버 오류가 발생했습니다.",
+      noReply: "응답이 없습니다.",
+      scoreError: "점수 오류",
+      reviewTitle: "인식된 리뷰",
+      tabCheck: "리뷰 검사하기",
+      tabEval: "리뷰 평가하기",
+      resultTitle: " 검사 결과 (광고일 확률)",
+      aiSummary: "AI 요약",
+      sendBtn: "검사하기",
+      uploadBtn: "가게 추천받기",
+      langToggleLabel: "언어 변경",
+    },
+    en: {
+      placeholder: "Highlight a review to analyze.",
+      loading: "Working...",
+      selectTextFirst: "Please select text first.",
+      serverError: "A server error occurred.",
+      noReply: "No response received.",
+      scoreError: "Score unavailable",
+      reviewTitle: "Detected Review",
+      tabCheck: "Check Review",
+      tabEval: "Evaluate Reviews",
+      resultTitle: " Result (Ad likelihood)",
+      aiSummary: "AI Summary",
+      sendBtn: "Analyze",
+      uploadBtn: "Get Store Recommendations",
+      langToggleLabel: "Switch language",
+    },
+  };
+
+  let currentLang = "ko";
+  let PLACEHOLDER = STRINGS[currentLang].placeholder;
+
+  const currentStrings = () => STRINGS[currentLang];
 
   // ===== In-memory cache (popup session) =====
   // key: text string
@@ -23,26 +70,31 @@ document.addEventListener("DOMContentLoaded", () => {
   let currentAbort = null;
 
   // ===== Small helpers =====
+  const sameAsPlaceholder = (t) => !t || t === PLACEHOLDER;
+
+  const setPlaceholderIfNeeded = () => {
+    if (sameAsPlaceholder(textBox.textContent) || textBox.classList.contains("placeholder")) {
+      textBox.textContent = PLACEHOLDER;
+      textBox.classList.add("placeholder");
+    }
+  };
+
   const setStatus = (msg) => {
-    // Optional: if you have a status element, you can use it
-    // For now, we reuse resultEl when empty
     if (!resultEl.textContent || resultEl.textContent === PLACEHOLDER) {
       resultEl.textContent = msg;
     }
   };
 
   const setLoadingUI = () => {
-    // show fast feedback immediately
-    resultEl.textContent = "처리 중...";
+    resultEl.textContent = currentStrings().loading;
     if (numberEl) numberEl.textContent = "";
-    // if you have progress bar, you can also reset it here:
     if (typeof window.updateProgress === "function") {
       window.updateProgress(0);
     }
   };
 
   const showGemini = (reply) => {
-    resultEl.textContent = reply || "응답이 없습니다.";
+    resultEl.textContent = reply || currentStrings().noReply;
   };
 
   const showScore = (score) => {
@@ -56,8 +108,6 @@ document.addEventListener("DOMContentLoaded", () => {
   };
 
   const normalizeSelectedText = (t) => (t || "").trim();
-
-  const sameAsPlaceholder = (t) => !t || t === PLACEHOLDER;
 
   // Cache policy: keep only recent (avoid memory blow-up if user selects tons of text)
   const CACHE_TTL_MS = 2 * 60 * 1000; // 2 min
@@ -118,8 +168,6 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   };
 
-  loadSelectionIntoTextBox();
-
   // ===== Networking =====
   const postJSON = async (url, bodyStr, signal) => {
     const res = await fetch(url, {
@@ -127,11 +175,8 @@ document.addEventListener("DOMContentLoaded", () => {
       headers: { "Content-Type": "application/json" },
       body: bodyStr,
       signal,
-      // keepalive can help if popup closes quickly (limited support for POST)
-      // keepalive: true,
     });
 
-    // Try to parse error body too
     if (!res.ok) {
       let detail = "";
       try {
@@ -144,7 +189,6 @@ document.addEventListener("DOMContentLoaded", () => {
   };
 
   const getOrStartInflight = (text, signal) => {
-    // De-dupe: if same text is already being processed, reuse promises.
     const existing = inflightByText.get(text);
     if (existing) return existing;
 
@@ -156,9 +200,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const pair = { gemP, detP };
     inflightByText.set(text, pair);
 
-    // Cleanup inflight entry after both settle
     Promise.allSettled([gemP, detP]).then(() => {
-      // only delete if still the same pair (avoid race with new request for same text)
       const cur = inflightByText.get(text);
       if (cur === pair) inflightByText.delete(text);
     });
@@ -166,51 +208,65 @@ document.addEventListener("DOMContentLoaded", () => {
     return pair;
   };
 
+  // ===== Language toggle =====
+  const applyLanguage = (lang) => {
+    if (!STRINGS[lang]) lang = "ko";
+    currentLang = lang;
+    PLACEHOLDER = STRINGS[currentLang].placeholder;
+    const t = currentStrings();
+
+    document.documentElement.lang = currentLang;
+    if (tabCheckText) tabCheckText.innerHTML = `📝<b> ${t.tabCheck}</b>`;
+    if (tabEvalText) tabEvalText.innerHTML = `📊<b> ${t.tabEval}</b>`;
+    if (reviewTitle) reviewTitle.textContent = t.reviewTitle;
+    if (resultTitle) resultTitle.textContent = t.resultTitle;
+    if (aiSummaryTitle) aiSummaryTitle.textContent = t.aiSummary;
+    if (sendBtn) sendBtn.textContent = t.sendBtn;
+    if (uploadBtn) uploadBtn.textContent = t.uploadBtn;
+    if (langToggleLabel) langToggleLabel.textContent = currentLang === "ko" ? "EN" : "KO";
+    if (langToggle) langToggle.setAttribute("aria-label", t.langToggleLabel);
+
+    setPlaceholderIfNeeded();
+    chrome.storage.local.set({ uiLang: currentLang });
+  };
+
   // ===== Click handler =====
   const onSend = async () => {
     const inputText = normalizeSelectedText(textBox.textContent);
 
     if (sameAsPlaceholder(inputText)) {
-      resultEl.innerText = "텍스트를 먼저 선택해 주세요.";
+      resultEl.innerText = currentStrings().selectTextFirst;
       return;
     }
 
-    // Abort previous in-flight request for this popup session
     if (currentAbort) currentAbort.abort();
     currentAbort = new AbortController();
 
     setLoadingUI();
 
-    // Instant response if cached
     const cached = memCache.get(inputText);
     if (cached && Date.now() - cached.ts <= CACHE_TTL_MS) {
       if (cached.gemReply) showGemini(cached.gemReply);
       if (typeof cached.score === "number") showScore(cached.score);
-      // Still optionally refresh in background? (Popup code can't truly background-run reliably)
-      // We'll just return for max speed.
       return;
     }
 
     try {
       const { gemP, detP } = getOrStartInflight(inputText, currentAbort.signal);
 
-      // Render Gemini as soon as ready
       gemP
         .then((gem) => {
-          const reply = gem?.reply || "응답이 없습니다.";
+          const reply = gem?.reply || currentStrings().noReply;
           cachePut(inputText, { gemReply: reply, gemCached: !!gem?.cached });
           showGemini(reply);
           if (gem?.cached) console.log("Gemini: cache hit");
         })
         .catch((e) => {
-          // If aborted, do nothing
           if (e?.name === "AbortError") return;
           console.error("Gemini Error:", e);
-          // Don't overwrite if user already got a reply from another run
-          resultEl.textContent = "서버 오류가 발생했습니다.";
+          resultEl.textContent = currentStrings().serverError;
         });
 
-      // Render score as soon as ready
       detP
         .then((rate) => {
           const score = Number(rate?.prob_ad ?? 0);
@@ -221,29 +277,40 @@ document.addEventListener("DOMContentLoaded", () => {
         .catch((e) => {
           if (e?.name === "AbortError") return;
           console.error("Detect-ad Error:", e);
-          // Score failing shouldn't kill Gemini result; just show a small hint
-          if (numberEl) numberEl.textContent = "점수 오류";
+          if (numberEl) numberEl.textContent = currentStrings().scoreError;
         });
-
-      // Optionally wait for both if you need to coordinate (not required for speed)
-      // await Promise.allSettled([gemP, detP]);
-
     } catch (err) {
       if (err?.name === "AbortError") return;
       console.error("API Error:", err);
-      resultEl.textContent = "서버 오류가 발생했습니다.";
+      resultEl.textContent = currentStrings().serverError;
     }
   };
 
   sendBtn.addEventListener("click", onSend);
 
-  // Bonus: allow Enter key to send (if your popup supports it)
   document.addEventListener("keydown", (e) => {
     if (e.key === "Enter") onSend();
   });
 
-  // Abort when popup is closing (best effort)
+  if (langToggle) {
+    langToggle.addEventListener("click", () => {
+      const next = currentLang === "ko" ? "en" : "ko";
+      applyLanguage(next);
+    });
+  }
+
+  const initializeLanguage = () => {
+    chrome.storage.local.get("uiLang", ({ uiLang }) => {
+      if (uiLang && STRINGS[uiLang]) currentLang = uiLang;
+      PLACEHOLDER = STRINGS[currentLang].placeholder;
+      applyLanguage(currentLang);
+      loadSelectionIntoTextBox();
+    });
+  };
+
   window.addEventListener("beforeunload", () => {
     if (currentAbort) currentAbort.abort();
   });
+
+  initializeLanguage();
 });

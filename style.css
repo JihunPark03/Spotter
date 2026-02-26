@@ -24,7 +24,30 @@
 }
 
 /* =====  로고 ===== */
-.brand{display:block;margin:0 auto 16px;}
+.brand{display:block;margin:0;}
+
+.top-bar{
+  position:relative;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  margin-bottom:16px;
+}
+.lang-toggle{
+  position:absolute;
+  right:0;
+  top:50%;
+  transform:translateY(-50%);
+  padding:6px 10px;
+  border:1px solid var(--gray-300);
+  border-radius:999px;
+  background:white;
+  font-size:12px;
+  font-weight:700;
+  cursor:pointer;
+  transition:.2s;
+}
+.lang-toggle:hover{filter:brightness(.96);}
 
 /* =====  탭 버튼들  ===== */
 .tab-row{display:flex;gap:8px;margin-bottom:20px;}
@@ -42,6 +65,7 @@
   cursor:pointer;
   transition:.2s;
 }
+.tab-btn span{white-space:nowrap;}
 .tab-btn.primary{
   border-color:var(--primary);
   background:var(--primary-light);

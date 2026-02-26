@@ -16,17 +16,21 @@
 
 <body>
   <div class="card">
-    <!-- 로고 SVG -->
-    <img src="logo.svg" alt="SPOTTER logo" class="brand" width="120" height="auto" />
+    <div class="top-bar">
+      <img src="logo.svg" alt="SPOTTER logo" class="brand" width="120" height="auto" />
+      <button id="langToggle" class="lang-toggle" type="button" aria-label="Switch language">
+        <span id="langToggleLabel">EN</span>
+      </button>
+    </div>
 
     <!-- Top Tabs -->
     <div class="tab-row">
       <button class="tab-btn primary">
-        <span>📝<b> 리뷰 검사하기</b></span>
+        <span id="tabCheckText">📝<b> 리뷰 검사하기</b></span>
       </button>
       <a href="eval_home.html" style="text-decoration: none; flex:1; display:flex;">
-      <button class="tab-btn">
-        <span>📊<b> 리뷰 평가하기</b></span>
+      <button class="tab-btn ">
+        <span id="tabEvalText">📊<b> 리뷰 평가하기</b></span>
       </button>
       </a>
     </div>
@@ -35,7 +39,7 @@
     <section>
       <div class="review-box">
         <div class="sub-tabs">
-            <h3 class="section-title">인식된 리뷰</h3>
+            <h3 class="section-title" id="reviewTitle">인식된 리뷰</h3>
         </div>
 
         <p class="review-text">
@@ -51,7 +55,7 @@
 
     <!-- 검사 결과 -->
     <section>
-      <h3 class="section-title2"> 검사 결과 (광고일 확률)</h3>
+      <h3 class="section-title2" id="resultTitle"> 검사 결과 (광고일 확률)</h3>
       <div class="progress-box">
         <p class="progress-label">
           <b id="message"></b>
@@ -67,7 +71,7 @@
     </div>
 
     <div class="ai-summary">
-      <strong>AI 요약</strong>
+      <strong id="aiSummaryTitle">AI 요약</strong>
       <div id="result"></div>
       <br/>
       <!-- <span class="highlight">스스로 작성한 리뷰</span>로 판단했어요. -->
@@ -78,7 +82,7 @@
         <div class="gradation"></div>
         <div class="button-wrapper">
             <a href="recommendation.html" style="text-decoration: none; flex:1; display:flex;">
-            <button class="upload-btn">가게 추천받기</button>
+            <button class="upload-btn" id="uploadBtn">가게 추천받기</button>
             </a>
         </div>
   </div>
